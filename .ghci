@@ -1,0 +1,2 @@
+:set -itest-suite/ -package wai-better-cache -package hspec -package hspec-expectations-pretty-diff
+:def test   \_ -> return $ ":load test-suite/Spec.hs\n:reload\n:main --color\n:m *Network.Wai.Middleware.BetterCache\n:reload"
