@@ -2,7 +2,6 @@
 
 module Network.Wai.Middleware.BetterCache.KeysSpec where
 
-import qualified Data.HashSet as Set
 import           Test.Hspec (Spec, describe, it)
 import           Test.Hspec.Expectations.Pretty
 import           Network.HTTP.Types.Status
@@ -21,11 +20,11 @@ spec = do
       keyGenerator (responseLBS ok200 [(hVary, "*")] "")
         `shouldBe` Right (KeyGenerator AllHeaders FullQuery)
       keyGenerator (responseLBS ok200 [(hVary, "Accept-Encoding")] "")
-        `shouldBe` Right (KeyGenerator (FilteredHeaders $ Set.fromList [ AcceptEncoding ]) FullQuery)
+        `shouldBe` Right (KeyGenerator (FilteredHeaders [ KHeader "Accept-Encoding" ]) FullQuery)
       keyGenerator (responseLBS ok200 [(hVary, "Accept,    Accept-Encoding"), ("kEY", " Cookie\t")] "")
-        `shouldBe` Right (KeyGenerator (FilteredHeaders $ Set.fromList [ Accept, AcceptEncoding, Other "Cookie" ]) FullQuery)
+        `shouldBe` Right (KeyGenerator (FilteredHeaders [ KHeader "Accept", KHeader "Accept-Encoding", KHeader "Cookie" ]) FullQuery)
       keyGenerator (responseLBS ok200 [(hVary, "Accept,    Accept-Encoding"), ("Vary-Query", " page, perPage\t"), ("kEY", " Cookie\t"), ("Vary-Query", "v")] "")
-        `shouldBe` Right (KeyGenerator (FilteredHeaders $ Set.fromList [ Accept, AcceptEncoding, Other "Cookie" ])
+        `shouldBe` Right (KeyGenerator (FilteredHeaders [ KHeader "Accept", KHeader "Accept-Encoding", KHeader "Cookie" ])
                                        (FilteredQuery [ "page", "perPage", "v" ]))
       keyGenerator (responseLBS ok200 [("Vary-Query", " page, perPage\t"), ("Vary-Query", "v")] "")
         `shouldBe` Right (KeyGenerator IgnoreHeaders (FilteredQuery [ "page", "perPage", "v" ]))
@@ -35,13 +34,13 @@ spec = do
       generateKey (KeyGenerator IgnoreHeaders FullQuery)
                   defaultRequest { requestHeaders = [ (hAcceptEncoding, "gzip") ] }
         `shouldBe` 0
-      generateKey (KeyGenerator (FilteredHeaders $ Set.fromList [ AcceptEncoding ]) FullQuery)
+      generateKey (KeyGenerator (FilteredHeaders [ KHeader "Accept-Encoding" ]) FullQuery)
                   defaultRequest { requestHeaders = [ ("Whatever", "Test") ] }
         `shouldBe` 0
-      generateKey (KeyGenerator (FilteredHeaders $ Set.fromList [ AcceptEncoding ]) FullQuery)
+      generateKey (KeyGenerator (FilteredHeaders [ KHeader "Accept-Encoding" ]) FullQuery)
                   defaultRequest { requestHeaders = [ (hAcceptEncoding, "gzip"), (hAccept, "*") ] }
         `shouldBe` 7466701558882623328
-      generateKey (KeyGenerator (FilteredHeaders $ Set.fromList [ AcceptEncoding ]) FullQuery)
+      generateKey (KeyGenerator (FilteredHeaders [ KHeader "Accept-Encoding" ]) FullQuery)
                   defaultRequest { requestHeaders = [ (hAcceptEncoding, "gzip"), (hAccept, "text/html") ] }
         `shouldBe` 7466701558882623328
       generateKey (KeyGenerator AllHeaders FullQuery)
