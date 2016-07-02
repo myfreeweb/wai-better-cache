@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, OverloadedStrings #-}
 
 module Network.Wai.Middleware.BetterCache.KeysSpec where
 

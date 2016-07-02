@@ -1,19 +1,21 @@
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings, GADTs, MultiParamTypeClasses, FlexibleContexts #-}
+{-# LANGUAGE UnicodeSyntax, OverloadedStrings, RecordWildCards, GADTs, MultiParamTypeClasses, FlexibleContexts #-}
 
 module Network.Wai.Middleware.BetterCache (
-  CurrentTime
-, CacheExpiration (..)
-, CacheBackend (..)
+  betterCache
 
-, PrimaryCacheKey
-, SecondaryCacheKey
-, CachedRequest (..)
-, CacheControl (..)
+, CacheBackend (..)
+, CurrentTime
+
 , CacheConf
 , cacheConf
-, defaultPrimaryRequestKey
-, defaultSecondaryRequestKey
+, CacheControl (..)
 , defaultCacheControl
+, PrimaryCacheKey
+, defaultPrimaryRequestKey
+, KeyGenerator
+, SecondaryCacheKey
+, defaultSecondaryRequestKey
+, CachedResponse (..)
 ) where
 
 import           Data.ByteString as BS
@@ -32,21 +34,11 @@ import           Network.HTTP.Types.Header
 import           Network.Wai
 import           Network.Wai.Middleware.BetterCache.Keys
 
--- TODO: something about wai-extra gzip not adding Vary (vary by normalized encoding by default?)
 -- TODO: unsupported querystring params removal for servant
 
 type CurrentTime = Int64
 
-data CacheExpiration = Forever | Seconds Int
-                     deriving (Eq, Show)
-
-class CacheBackend α κ ω where
-  cacheRead ∷ α → CurrentTime → κ → IO (Maybe ω)
-  cacheWrite ∷ α → CacheExpiration → CurrentTime → κ → ω → IO ()
-  cacheInvalidate ∷ α → κ → IO ()
-
-
-data CachedRequest = CachedRequest Status ResponseHeaders BL.ByteString
+data CachedResponse = CachedResponse Status ResponseHeaders BL.ByteString
                    deriving (Eq, Show)
 
 data CacheControl = Unknown | NoStore | Immutable | MaxAge Int | SMaxAge Int
@@ -65,13 +57,18 @@ instance Monoid CacheControl where
   MaxAge _ `mappend` MaxAge b = MaxAge b
   SMaxAge _ `mappend` SMaxAge b = SMaxAge b
 
+class CacheBackend α κ ω where
+  cacheRead ∷ α → CurrentTime → κ → IO (Maybe ω)
+  cacheWrite ∷ α → CacheControl → CurrentTime → κ → ω → IO ()
+  cacheInvalidate ∷ α → κ → IO ()
+
 type PrimaryCacheKey = ByteString
 
 type SecondaryCacheKey = Word64
 
 data CacheConf where
   CacheConf ∷ (CacheBackend π PrimaryCacheKey KeyGenerator,
-               CacheBackend σ SecondaryCacheKey CachedRequest) ⇒
+               CacheBackend σ SecondaryCacheKey CachedResponse) ⇒
     { primaryBackend ∷ π
     , secondaryBackend ∷ σ
     , getCurrentTime ∷ IO CurrentTime
@@ -81,7 +78,7 @@ data CacheConf where
     } → CacheConf
 
 cacheConf ∷ (CacheBackend π PrimaryCacheKey KeyGenerator,
-             CacheBackend σ SecondaryCacheKey CachedRequest)
+             CacheBackend σ SecondaryCacheKey CachedResponse)
           ⇒ π → σ → CacheConf
 cacheConf pb sb =
   CacheConf { primaryBackend = pb
@@ -95,6 +92,7 @@ defaultPrimaryRequestKey ∷ Request → PrimaryCacheKey
 defaultPrimaryRequestKey req = (fromMaybe "" $ requestHeaderHost req)
                       `append` (BS.takeWhile (/= 63) $ rawPathInfo req)
 
+-- TODO: something about wai-extra gzip not adding Vary (vary by normalized encoding by default?)
 defaultSecondaryRequestKey ∷ KeyGenerator → Request → SecondaryCacheKey
 defaultSecondaryRequestKey = generateKey
 
@@ -121,3 +119,29 @@ responseToLBS resp =
       builderRef ← newIORef mempty
       body (\b → atomicModifyIORef builderRef $ \builder → (builder `mappend` b, ())) (return ())
       toLazyByteString <$> readIORef builderRef
+
+betterCache ∷ CacheConf → Middleware
+betterCache CacheConf{..} app req respond = do
+  let primKey = primaryRequestKey req
+  time ← getCurrentTime
+  let goRequest = app req $ \rsp → do
+        let cc = cacheControl req rsp
+        case keyGenerator rsp of
+             Left _ → respond rsp
+             Right keyGen → do
+               cacheWrite primaryBackend cc time primKey keyGen
+               let secondKey = secondaryRequestKey keyGen req
+               let status = responseStatus rsp
+               let headers = responseHeaders rsp
+               body ← responseToLBS rsp
+               cacheWrite secondaryBackend cc time secondKey $ CachedResponse status headers body
+               respond $ responseLBS status headers body
+  keyGen' ← cacheRead primaryBackend time primKey ∷ IO (Maybe KeyGenerator)
+  case keyGen' of
+       Nothing → goRequest
+       Just keyGen → do
+         let secondKey = secondaryRequestKey keyGen req
+         cachedRsp' ← cacheRead secondaryBackend time secondKey ∷ IO (Maybe CachedResponse)
+         case cachedRsp' of
+              Nothing → goRequest
+              Just (CachedResponse s hs b) → respond $ responseLBS s hs b

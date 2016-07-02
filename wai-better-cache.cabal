@@ -35,6 +35,7 @@ library
       , hashable
       , unordered-containers
       , errors
+      , safe
       , clock
       , time
       , wai
@@ -58,7 +59,10 @@ test-suite tests
       , wai-better-cache
       , case-insensitive
       , unordered-containers
+      , transformers
+      , safe
       , wai
+      , wai-extra
       , http-types
       , hspec
       , hspec-expectations-pretty-diff
