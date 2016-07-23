@@ -25,7 +25,10 @@ instance Eq κ ⇒ CacheBackend (MockBackend κ ω) κ ω where
   cacheRead (MockBackend esv) t k = do
     es ← takeMVar esv
     let matchesKey (MockRead _ _ _) = False
-        matchesKey (MockWrite _ _ k' _) = k == k' -- TODO: Time check
+        matchesKey (MockWrite Immutable _ k' _) = k == k'
+        matchesKey (MockWrite (SMaxAge age) t' k' _) = k == k' && (fromIntegral $ t - t') < age
+        matchesKey (MockWrite (MaxAge  age) t' k' _) = k == k' && (fromIntegral $ t - t') < age
+        matchesKey (MockWrite _ _ _ _) = False
         matchesKey (MockInvalidate k') = k == k'
         extractVal (MockRead _ _ v) = v
         extractVal (MockWrite _ _ _ v) = Just v
@@ -44,6 +47,7 @@ spec = do
   let cc = hCacheControl
   let ok = responseLBS ok200
 
+
   describe "defaultCacheControl" $ do
     let dCC = defaultCacheControl
     it "parses Cache-Control" $ do
@@ -56,6 +60,7 @@ spec = do
       dCC defreq (ok [(cc, ", max-age=123,, immutable, \ts-maxage =\"321\" \t")] "") `shouldBe` Immutable
       dCC defreq (ok [(cc, ",no-store, max-age=123,, immutable, \ts-maxage =\"321\" \t")] "") `shouldBe` NoStore
 
+
   describe "defaultPrimaryRequestKey" $ do
     let dPRK = defaultPrimaryRequestKey
     it "generates primary cache keys" $ do
@@ -63,16 +68,33 @@ spec = do
       dPRK defreq { requestHeaderHost = Just "examp.le" } `shouldBe` "examp.le"
       dPRK defreq { requestHeaderHost = Just "examp.le", rawPathInfo = "/memes?type=dank" } `shouldBe` "examp.le/memes"
 
+
   describe "betterCache" $ do
     let things = do
           primEvs ← liftIO $ newMVar ([] ∷ [MockEvent PrimaryCacheKey KeyGenerator])
           secEvs ← liftIO $ newMVar ([] ∷ [MockEvent SecondaryCacheKey CachedResponse])
-          let app req respond = respond $ responseLBS status200 [("Cache-Control", "max-age=100")] "Hello World"
-              cachedApp = betterCache (cacheConf (MockBackend primEvs) (MockBackend secEvs)) app
-          return (primEvs, secEvs, cachedApp)
-    it "caches GET requests with the right headers" $ do
-      (primEvs, secEvs, cachedApp) ← things
-      rsp ← runSession (request defaultRequest) cachedApp
-      traceShowM =<< readMVar primEvs
-      traceShowM =<< readMVar secEvs
-      simpleStatus rsp `shouldBe` ok200
+          hitCount ← liftIO $ newMVar 0
+          curTime ← liftIO $ newMVar (0 ∷ CurrentTime)
+          let app _ respond = do
+                liftIO $ modifyMVar_ hitCount $ return . (+1)
+                respond $ responseLBS status200 [("Cache-Control", "max-age=100")] "Hello World"
+              conf = (cacheConf (MockBackend primEvs) (MockBackend secEvs)) { getCurrentTime = readMVar curTime }
+              cachedApp = betterCache conf app
+          return (primEvs, secEvs, hitCount, curTime, cachedApp)
+        shouldBeCorrect rsp = do
+          simpleStatus rsp `shouldBe` ok200
+          simpleBody rsp `shouldBe` "Hello World"
+        doGetReq cachedApp =
+          runSession (request defaultRequest) cachedApp >>= shouldBeCorrect
+
+    it "caches GET requests, serves them back for a given time" $ do
+      (_, _, hitCount, curTime, cachedApp) ← things
+      doGetReq cachedApp
+      doGetReq cachedApp
+      readMVar hitCount >>= (`shouldBe` 1)
+      modifyMVar_ curTime $ return . (+10)
+      doGetReq cachedApp
+      readMVar hitCount >>= (`shouldBe` 1)
+      modifyMVar_ curTime $ return . (+90)
+      doGetReq cachedApp
+      readMVar hitCount >>= (`shouldBe` 2)

@@ -6,7 +6,7 @@ module Network.Wai.Middleware.BetterCache (
 , CacheBackend (..)
 , CurrentTime
 
-, CacheConf
+, CacheConf (..)
 , cacheConf
 , CacheControl (..)
 , defaultCacheControl
