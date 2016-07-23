@@ -62,7 +62,7 @@ keyGenerator ∷ Response → Either String KeyGenerator
 keyGenerator resp = do
   let hdrs = responseHeaders resp
   keyhs   ← parseOnly takeHeaderParser   $ intercalate "," $ [ v | (k, v) ← hdrs, k == hVary || k == "Key" ]
-  queryps ← parseOnly takeQueryParser $ intercalate "," $ [ v | (k, v) ← hdrs, k == "Vary-Query" ]
+  queryps ← parseOnly takeQueryParser    $ intercalate "," $ [ v | (k, v) ← hdrs, k == "Vary-Query" ]
   return $ KeyGenerator keyhs queryps
 
 takeHeaderParser ∷ Parser TakeHeaders
