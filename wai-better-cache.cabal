@@ -41,16 +41,16 @@ library
       , wai
       , http-types
       , attoparsec
-      , lrucache
     default-language: Haskell2010
     exposed-modules:
         Network.Wai.Middleware.BetterCache
         Network.Wai.Middleware.BetterCache.Keys
     -- other-modules:
+    if flag(inmemory)
+        build-depends: lrucache
+        exposed-modules: Network.Wai.Middleware.BetterCache.Backend.InMemory
     hs-source-dirs: library
     ghc-options: -Wall
-    if flag(inmemory)
-        cpp-options: -DINMEMORY
 
 test-suite tests
     build-depends:

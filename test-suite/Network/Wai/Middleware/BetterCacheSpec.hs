@@ -12,7 +12,7 @@ import           Network.Wai.Test
 import           Network.Wai.Middleware.BetterCache
 import           Control.Concurrent.MVar
 import           Control.Monad.IO.Class
-import           Debug.Trace
+--import           Debug.Trace
 import           Safe
 
 data MockEvent κ ω =   MockRead CurrentTime κ (Maybe ω)
@@ -39,7 +39,7 @@ instance Eq κ ⇒ CacheBackend (MockBackend κ ω) κ ω where
     return result
   cacheWrite (MockBackend esv) c t k v =
     modifyMVar_ esv $ \es → return $ (MockWrite c t k v) : es
-  cacheInvalidate (MockBackend esv) k =
+  cacheInvalidate (MockBackend esv) k _ =
     modifyMVar_ esv $ \es → return $ (MockInvalidate k) : es
 
 spec ∷ Spec

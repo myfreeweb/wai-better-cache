@@ -22,6 +22,7 @@ import           Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import           Data.Attoparsec.ByteString.Char8 as AP
 import           Data.IORef
+import           Data.Proxy
 import           Data.Maybe (fromMaybe)
 import           Data.Word (Word64)
 import           GHC.Int (Int64)
@@ -60,7 +61,8 @@ instance Monoid CacheControl where
 class CacheBackend α κ ω where
   cacheRead ∷ α → CurrentTime → κ → IO (Maybe ω)
   cacheWrite ∷ α → CacheControl → CurrentTime → κ → ω → IO ()
-  cacheInvalidate ∷ α → κ → IO ()
+  cacheInvalidate ∷ α → κ → Proxy ω → IO ()
+  -- Proxy hack to make cacheInvalidate callable from functions polymorphic over α, because GHC >_<
 
 type PrimaryCacheKey = ByteString
 

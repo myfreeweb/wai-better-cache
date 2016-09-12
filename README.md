@@ -1,14 +1,13 @@
 # wai-better-cache
 
-**WORK IN PROGRESS**: backends haven't been written yet.
-
 It's, like, a way better cache for [WAI].
 
 - Controlled by the application, using the Cache-Control header and the Vary header (TODO: and its proposed superset, the [Key header])
   - Yes, the same headers that are respected by web browsers' caches! Configure server-side caching, get client-side for free (or vice versa)
   - By the way, [Caching best practices] is a great article about setting up the caching headers
-- Pluggable storage backends
-- Separate backends for primary entries (map: URL without the query → key generator, i.e. the Vary/Key header) and secondary entries (map: result of applying the key generator to the request → cached response)
+- Pluggable storage backends. Included:
+  - in-memory [lrucache](https://github.com/chowells79/lrucache)
+- A cache uses two separate backends (instances): one for primary entries (map: URL without the query → key generator, i.e. the Vary/Key header) and one for secondary entries (map: result of applying the key generator to the request → cached response)
 - A great test suite
 
 [WAI]: https://hackage.haskell.org/package/wai
