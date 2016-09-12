@@ -1,4 +1,5 @@
 {-# LANGUAGE UnicodeSyntax, OverloadedStrings, MultiParamTypeClasses, FlexibleInstances #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 
 module Network.Wai.Middleware.BetterCacheSpec where
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings, RecordWildCards, GADTs, MultiParamTypeClasses, FlexibleContexts #-}
+{-# LANGUAGE UnicodeSyntax, OverloadedStrings, RecordWildCards, GADTs, MultiParamTypeClasses, FlexibleContexts, AllowAmbiguousTypes #-}
 
 module Network.Wai.Middleware.BetterCache (
   betterCache
