@@ -45,7 +45,8 @@ library
     exposed-modules:
         Network.Wai.Middleware.BetterCache
         Network.Wai.Middleware.BetterCache.Keys
-    -- other-modules:
+    other-modules:
+        Network.Wai.Middleware.BetterCache.SafeImports
     if flag(inmemory)
         build-depends: lrucache
         exposed-modules: Network.Wai.Middleware.BetterCache.Backend.InMemory
@@ -71,6 +72,7 @@ test-suite tests
     build-depends:
         base >= 4.3.0.0 && < 5
       , text
+      , bytestring
       , wai-better-cache
       , case-insensitive
       , unordered-containers

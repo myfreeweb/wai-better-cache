@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings, FlexibleContexts, TupleSections, DeriveGeneric #-}
+{-# LANGUAGE Safe, UnicodeSyntax, OverloadedStrings, FlexibleContexts, TupleSections, DeriveGeneric #-}
 
 module Network.Wai.Middleware.BetterCache.Keys (
   Filter (..)
@@ -12,14 +12,12 @@ module Network.Wai.Middleware.BetterCache.Keys (
 import qualified Data.CaseInsensitive as CI
 import           Data.ByteString hiding (elem, filter, map)
 import           Data.Attoparsec.ByteString.Char8
-import           Data.ByteArray.Hash
 import           Data.Word (Word64)
 import           Data.Maybe (fromMaybe, mapMaybe)
 import           Control.Applicative
 import           Control.Arrow (first, second)
 import           GHC.Generics (Generic)
-import           Network.HTTP.Types.Header
-import           Network.Wai
+import           Network.Wai.Middleware.BetterCache.SafeImports
 
 -- TODO: https://tools.ietf.org/html/draft-ietf-httpbis-key-01
 data Filter = KHeader (CI.CI ByteString) -- | Param Filter ByteString | Substr Filter ByteString ...

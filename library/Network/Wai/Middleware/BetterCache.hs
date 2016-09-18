@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings, RecordWildCards, GADTs, MultiParamTypeClasses, FlexibleContexts, AllowAmbiguousTypes #-}
+{-# LANGUAGE Safe, UnicodeSyntax, OverloadedStrings, RecordWildCards, GADTs, MultiParamTypeClasses, FlexibleContexts, AllowAmbiguousTypes #-}
 
 module Network.Wai.Middleware.BetterCache (
   betterCache
@@ -29,11 +29,9 @@ import           GHC.Int (Int64)
 import           Control.Applicative
 import           Control.Monad (liftM)
 import           System.Clock
-import           Blaze.ByteString.Builder (toLazyByteString)
 import           Network.HTTP.Types.Status
-import           Network.HTTP.Types.Header
-import           Network.Wai
 import           Network.Wai.Middleware.BetterCache.Keys
+import           Network.Wai.Middleware.BetterCache.SafeImports
 
 -- TODO: unsupported querystring params removal for servant
 

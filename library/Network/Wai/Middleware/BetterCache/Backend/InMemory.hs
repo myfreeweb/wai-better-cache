@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings, FlexibleInstances, MultiParamTypeClasses, LambdaCase, DeriveDataTypeable #-}
+{-# LANGUAGE Safe, UnicodeSyntax, OverloadedStrings, FlexibleInstances, MultiParamTypeClasses, LambdaCase, DeriveDataTypeable #-}
 
 module Network.Wai.Middleware.BetterCache.Backend.InMemory (
   InMemoryCache
