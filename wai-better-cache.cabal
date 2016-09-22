@@ -90,4 +90,6 @@ test-suite tests
     other-modules:
         Network.Wai.Middleware.BetterCacheSpec
         Network.Wai.Middleware.BetterCache.KeysSpec
+        Network.Wai.Middleware.BetterCache.Backend.SpecHelper
+        Network.Wai.Middleware.BetterCache.Backend.InMemorySpec
     type: exitcode-stdio-1.0
