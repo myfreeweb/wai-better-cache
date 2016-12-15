@@ -24,6 +24,10 @@ flag inmemory
   description: Build the in-memory lrucache backend
   default: True
 
+flag memcache
+  description: Build the memcache backend
+  default: True
+
 library
     build-depends:
         base >= 4.3.0.0 && < 5
@@ -50,6 +54,9 @@ library
     if flag(inmemory)
         build-depends: lrucache
         exposed-modules: Network.Wai.Middleware.BetterCache.Backend.InMemory
+    if flag(memcache)
+        build-depends: memcache, store, th-utilities
+        exposed-modules: Network.Wai.Middleware.BetterCache.Backend.Memcache
     hs-source-dirs: library
     ghc-options: -Wall
 
@@ -60,6 +67,8 @@ executable example
       , wai
       , warp
       , http-types
+      , memcache
+      , data-default
       , bytestring
       , time
     default-language: Haskell2010

@@ -1,4 +1,4 @@
-{-# LANGUAGE Safe, UnicodeSyntax, OverloadedStrings, RecordWildCards, GADTs, MultiParamTypeClasses, FlexibleContexts, AllowAmbiguousTypes #-}
+{-# LANGUAGE Safe, UnicodeSyntax, OverloadedStrings, RecordWildCards, GADTs, MultiParamTypeClasses, FlexibleContexts, AllowAmbiguousTypes, DeriveGeneric #-}
 
 module Network.Wai.Middleware.BetterCache (
   betterCache
@@ -26,6 +26,7 @@ import           Data.Proxy
 import           Data.Maybe (fromMaybe)
 import           Data.Word (Word64)
 import           GHC.Int (Int64)
+import           GHC.Generics (Generic)
 import           Control.Applicative
 import           Control.Monad (liftM)
 import           System.Clock
@@ -38,7 +39,9 @@ import           Network.Wai.Middleware.BetterCache.SafeImports
 type CurrentTime = Int64
 
 data CachedResponse = CachedResponse Status ResponseHeaders BL.ByteString
-                   deriving (Eq, Show)
+                   deriving (Eq, Show, Generic)
+
+instance Store CachedResponse
 
 data CacheControl = Unknown | NoStore | Immutable | MaxAge Int | SMaxAge Int
                   deriving (Eq, Show)

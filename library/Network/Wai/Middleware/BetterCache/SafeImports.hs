@@ -6,3 +6,4 @@ import           Blaze.ByteString.Builder as X (toLazyByteString)
 import           Data.ByteArray.Hash as X
 import           Network.HTTP.Types.Header as X
 import           Network.Wai as X
+import           Data.Store as X (Store)

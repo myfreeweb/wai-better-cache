@@ -1,4 +1,4 @@
-{-# LANGUAGE Safe, UnicodeSyntax, OverloadedStrings, FlexibleContexts, TupleSections, DeriveGeneric #-}
+{-# LANGUAGE Trustworthy, UnicodeSyntax, OverloadedStrings, FlexibleInstances, FlexibleContexts, TupleSections, DeriveGeneric, TemplateHaskell #-}
 
 module Network.Wai.Middleware.BetterCache.Keys (
   Filter (..)
@@ -13,10 +13,13 @@ import qualified Data.CaseInsensitive as CI
 import           Data.ByteString hiding (elem, filter, map)
 import           Data.Attoparsec.ByteString.Char8
 import           Data.Word (Word64)
+import           Data.Store.TH
 import           Data.Maybe (fromMaybe, mapMaybe)
 import           Control.Applicative
 import           Control.Arrow (first, second)
 import           GHC.Generics (Generic)
+import           TH.Derive
+import           Network.HTTP.Types.Status
 import           Network.Wai.Middleware.BetterCache.SafeImports
 
 -- TODO: https://tools.ietf.org/html/draft-ietf-httpbis-key-01
@@ -27,14 +30,22 @@ applyElement ∷ RequestHeaders → Filter → Maybe Header
 applyElement hdrs (KHeader hdrname) = (hdrname, ) <$> lookup hdrname hdrs
 
 data TakeHeaders = IgnoreHeaders | FilteredHeaders [Filter] | AllHeaders
-                deriving (Eq, Show)
+                deriving (Eq, Show, Generic)
 
 data TakeQueryParams = IgnoreQuery | FilteredQuery [ByteString] | FullQuery
-                    deriving (Eq, Show)
+                    deriving (Eq, Show, Generic)
 
 data KeyGenerator = KeyGenerator TakeHeaders TakeQueryParams
-                  deriving (Eq, Show)
+                  deriving (Eq, Show, Generic)
 
+$($(derive [d|
+        instance Deriving (Store Status)
+        instance Deriving (Store (CI.CI ByteString))
+        |]))
+instance Store Filter
+instance Store TakeHeaders
+instance Store TakeQueryParams
+instance Store KeyGenerator
 
 generateKey ∷ KeyGenerator → Request → Word64
 generateKey (KeyGenerator khdrs kprms) req =
